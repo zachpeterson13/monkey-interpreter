@@ -1,7 +1,7 @@
 use crate::token::{self, Token};
 use std::str;
 
-struct Lexer {
+pub struct Lexer {
     input: Vec<u8>,
     position: usize,
     read_position: usize,
@@ -9,7 +9,7 @@ struct Lexer {
 }
 
 impl Lexer {
-    fn new(input: String) -> Self {
+    pub fn new(input: String) -> Self {
         let mut lexer = Self {
             input: input.into_bytes(),
             position: 0,
@@ -41,7 +41,7 @@ impl Lexer {
         }
     }
 
-    fn next_token(&mut self) -> token::Token {
+    pub fn next_token(&mut self) -> token::Token {
         let tok: token::Token;
 
         self.skip_whitespace();
@@ -54,7 +54,7 @@ impl Lexer {
                 } else {
                     tok = token::Token::ASSIGN;
                 }
-            },
+            }
             b';' => tok = token::Token::SEMICOLON,
             b'(' => tok = token::Token::LPAREN,
             b')' => tok = token::Token::RPAREN,
@@ -68,7 +68,7 @@ impl Lexer {
                 } else {
                     tok = token::Token::BANG;
                 }
-            },
+            }
             b'/' => tok = token::Token::SLASH,
             b'*' => tok = token::Token::ASTERISK,
             b'<' => tok = token::Token::LT,
