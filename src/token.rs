@@ -5,11 +5,11 @@ pub enum Token {
     // Special
     ILLEGAL,
     EOF,
-    
+
     // Identifiers + literals
     IDENT(String),
     INT(isize),
-    
+
     // Operators
     ASSIGN,
     PLUS,
@@ -26,7 +26,6 @@ pub enum Token {
     COMMA,
     SEMICOLON,
 
-    
     LPAREN,
     RPAREN,
     LBRACE,
@@ -45,14 +44,14 @@ pub enum Token {
 impl Token {
     pub fn from_literal(literal: &str) -> Token {
         match literal {
-           "let" => Token::LET,
-           "fn" => Token::FUNCTION,
-           "true" => Token::TRUE,
-           "false" => Token::FALSE,
-           "if" => Token::IF,
-           "else" => Token::ELSE,
-           "return" => Token::RETURN,
-           _ => Token::IDENT(literal.into()),
+            "let" => Token::LET,
+            "fn" => Token::FUNCTION,
+            "true" => Token::TRUE,
+            "false" => Token::FALSE,
+            "if" => Token::IF,
+            "else" => Token::ELSE,
+            "return" => Token::RETURN,
+            _ => Token::IDENT(literal.into()),
         }
     }
 
@@ -61,5 +60,3 @@ impl Token {
         Token::INT(number)
     }
 }
-
-
