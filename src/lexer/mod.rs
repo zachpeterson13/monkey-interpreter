@@ -1,4 +1,6 @@
-use crate::token::{self, Token};
+pub mod token;
+
+use crate::lexer::token::Token;
 use std::str;
 
 pub struct Lexer {
@@ -125,7 +127,7 @@ impl Lexer {
 
 #[cfg(test)]
 mod tests {
-    use crate::token::Token;
+    use crate::lexer::token::Token;
 
     use super::Lexer;
 

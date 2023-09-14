@@ -1,8 +1,6 @@
-use crate::{
-    ast::{self, Expression, LetStatement, Program, ReturnStatement, Statement},
-    lexer::Lexer,
-    token::Token,
-};
+pub mod ast;
+
+use crate::lexer::{token::Token, Lexer};
 
 struct Parser {
     lexer: Lexer,
@@ -47,7 +45,7 @@ impl Parser {
     }
 
     fn parse_program(&mut self) -> ast::Program {
-        let mut program = Program::new();
+        let mut program = ast::Program::new();
 
         while !self.cur_token_is(Token::EOF) {
             let statement = self.parse_statement();
@@ -60,15 +58,15 @@ impl Parser {
         return program;
     }
 
-    fn parse_statement(&mut self) -> Option<Statement> {
+    fn parse_statement(&mut self) -> Option<ast::Statement> {
         match self.curent_token {
-            Token::LET => Some(Statement::LetStatement(self.parse_let_statement()?)),
-            Token::RETURN => Some(Statement::ReturnStatement(self.parse_return_statement()?)),
-            _ => Some(Statement::ExpressionStatement(self.parse_expression_statement()?))
+            Token::LET => Some(ast::Statement::LetStatement(self.parse_let_statement()?)),
+            Token::RETURN => Some(ast::Statement::ReturnStatement(self.parse_return_statement()?)),
+            _ => Some(ast::Statement::ExpressionStatement(self.parse_expression_statement()?))
         }
     }
 
-    fn parse_let_statement(&mut self) -> Option<LetStatement> {
+    fn parse_let_statement(&mut self) -> Option<ast::LetStatement> {
         if !self.expect_peek(Token::IDENT("".to_string())) {
             return None;
         }
@@ -86,19 +84,19 @@ impl Parser {
             self.next_token();
         }
 
-        let let_statement = LetStatement {
+        let let_statement = ast::LetStatement {
             name,
-            value: Expression::Identifier("TEST".to_owned()),
+            value: ast::Expression::Identifier("TEST".to_owned()),
         };
 
         return Some(let_statement);
     }
 
-    fn parse_return_statement(&mut self) -> Option<ReturnStatement> {
+    fn parse_return_statement(&mut self) -> Option<ast::ReturnStatement> {
         self.next_token();
 
-        let return_statement = ReturnStatement {
-            return_value: Expression::Identifier("TEST".to_owned()),
+        let return_statement = ast::ReturnStatement {
+            return_value: ast::Expression::Identifier("TEST".to_owned()),
         };
 
         while !self.cur_token_is(Token::SEMICOLON) {
@@ -108,7 +106,7 @@ impl Parser {
         return Some(return_statement);
     }
 
-    fn parse_expression_statement(&mut self) -> Option<Expression> {
+    fn parse_expression_statement(&mut self) -> Option<ast::Expression> {
         let statement = self.parse_expression(Precedence::LOWEST)?;
 
         if self.peek_token_is(Token::SEMICOLON) {
@@ -118,7 +116,7 @@ impl Parser {
         return Some(statement);
     }
 
-    fn parse_expression(&mut self, precedence: Precedence) -> Option<Expression> {
+    fn parse_expression(&mut self, precedence: Precedence) -> Option<ast::Expression> {
         let left_expression = self.prefix_parse()?;
 
         return Some(left_expression);
@@ -162,10 +160,10 @@ impl Parser {
         }
     }
 
-    fn prefix_parse(&mut self) -> Option<Expression> {
+    fn prefix_parse(&mut self) -> Option<ast::Expression> {
         match &self.curent_token {
             Token::IDENT(name) => {
-                let identifier = Expression::Identifier(name.into());
+                let identifier = ast::Expression::Identifier(name.into());
 
                 return Some(identifier);
             },
@@ -175,7 +173,7 @@ impl Parser {
         }
     }
 
-    fn infix_parse(&mut self, left: &Expression) -> Option<Expression> {
+    fn infix_parse(&mut self, left: &ast::Expression) -> Option<ast::Expression> {
         None
     }
 }
@@ -193,9 +191,8 @@ enum Precedence {
 #[cfg(test)]
 mod tests {
     use crate::{
-        ast::{self, LetStatement, Program, Statement},
-        lexer,
-        token::Token,
+        parser::ast,
+        lexer::{token::Token, self},
     };
 
     use super::Parser;
@@ -260,7 +257,7 @@ mod tests {
             assert_eq!(statement.token_literal(), Token::RETURN);
 
             let _return_statement = match statement {
-                Statement::ReturnStatement(rs) => rs,
+                ast::Statement::ReturnStatement(rs) => rs,
                 _ => panic!("statement is not ReturnStatement"),
             };
         }
@@ -284,7 +281,7 @@ mod tests {
         }
 
         let statement = match &program.statements[0] {
-            Statement::ExpressionStatement(s) => s,
+            ast::Statement::ExpressionStatement(s) => s,
             x => panic!("statement is not ExpressionStatement. got: {}", x),
         };
 
@@ -298,23 +295,23 @@ mod tests {
 
     #[test]
     fn test_display() {
-        let s = Statement::LetStatement(LetStatement {
+        let s = ast::Statement::LetStatement(ast::LetStatement {
             name: "myVar".to_owned(),
             value: ast::Expression::Identifier("anotherVar".to_owned()),
         });
 
-        let program = Program {
+        let program = ast::Program {
             statements: vec![s.clone()],
         };
 
         assert_eq!("let myVar = anotherVar;", program.to_string());
     }
 
-    fn test_let_statement(statement: &Statement, name: &str) {
+    fn test_let_statement(statement: &ast::Statement, name: &str) {
         assert_eq!(statement.token_literal(), Token::LET);
 
         let let_statement = match statement {
-            Statement::LetStatement(ls) => ls,
+            ast::Statement::LetStatement(ls) => ls,
             _ => panic!("statement is not LetStatement"),
         };
 
