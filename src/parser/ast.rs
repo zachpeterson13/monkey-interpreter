@@ -95,6 +95,7 @@ impl Display for ReturnStatement {
 pub enum Expression {
     Identifier(String),
     IntegerLiteral(isize),
+    PrefixExpression(PrefixExpression),
 }
 
 impl Expression {
@@ -102,6 +103,7 @@ impl Expression {
         match self {
             Expression::Identifier(s) => Token::IDENT(s.to_string()),
             Expression::IntegerLiteral(i) => Token::INT(*i),
+            Expression::PrefixExpression(pe) => pe.token.clone(),
         }
     }
 }
@@ -111,6 +113,34 @@ impl Display for Expression {
         match self {
             Expression::Identifier(s) => s.fmt(f),
             Expression::IntegerLiteral(i) => i.fmt(f),
+            Expression::PrefixExpression(pe) => pe.fmt(f),
         }
+    }
+}
+
+#[derive(PartialEq, Clone, Debug)]
+pub struct PrefixExpression {
+    pub token: Token,
+    pub operator: String,
+    pub right: Box<Expression>,
+}
+
+impl PrefixExpression {
+    pub fn new(token: Token, right: Expression) -> PrefixExpression {
+        let operator = match token {
+            Token::BANG => String::from("!"),
+            Token::MINUS => String::from("-"),
+            _ => panic!(),
+        };
+
+        let right = Box::new(right);
+
+        return PrefixExpression{token, operator, right }
+    }
+}
+
+impl Display for PrefixExpression {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "({}{})", self.operator, self.right.to_string())
     }
 }
