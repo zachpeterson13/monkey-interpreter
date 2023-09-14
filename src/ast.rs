@@ -14,7 +14,7 @@ impl Display for Node {
         match self {
             Node::Program(p) => p.fmt(f),
             Node::Statement(s) => s.fmt(f),
-            Node::Expression(e) => e.fmt(e),
+            Node::Expression(e) => e.fmt(f),
         }
     }
 }
@@ -32,7 +32,12 @@ impl Program {
 
 impl Display for Program {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        todo!()
+        let mut out = String::new();
+        for statement in &self.statements {
+            out.push_str(&statement.to_string());
+        }
+
+        write!(f, "{}", out)
     }
 }
 
