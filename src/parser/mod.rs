@@ -167,6 +167,11 @@ impl Parser {
 
                 return Some(identifier);
             },
+            Token::INT(int) => {
+                let int_literal = ast::Expression::IntegerLiteral(*int);
+
+                return Some(int_literal);
+            },
             _ => {
                 return None;
             },
@@ -291,6 +296,36 @@ mod tests {
         };
 
         assert_eq!(identifier, "foobar");
+    }
+
+    #[test]
+    fn test_integer_literal_expression() {
+        let input = String::from("5;");
+
+        let lexer = lexer::Lexer::new(input);
+        let mut parser = Parser::new(lexer);
+
+        let program = parser.parse_program();
+        check_parse_errors(&parser);
+
+        if program.statements.len() != 1 {
+            panic!(
+            "program does not have enough statements. got: {}",
+            program.statements.len(),
+            );
+        }
+
+        let statement = match &program.statements[0] {
+            ast::Statement::ExpressionStatement(s) => s,
+            x => panic!("statement is not ExpressionStatement. got: {:?}", x),
+        };
+
+        let int_literal = match statement {
+            ast::Expression::IntegerLiteral(il) => *il,
+            x => panic!("ExpressionStatement is not IntegerLiteral got: {:?}", x),
+        };
+
+        assert_eq!(5, int_literal);
     }
 
     #[test]

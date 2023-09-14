@@ -94,12 +94,14 @@ impl Display for ReturnStatement {
 #[derive(PartialEq, Clone, Debug)]
 pub enum Expression {
     Identifier(String),
+    IntegerLiteral(isize),
 }
 
 impl Expression {
     pub fn token_literal(&self) -> Token {
         match self {
             Expression::Identifier(s) => Token::IDENT(s.to_string()),
+            Expression::IntegerLiteral(i) => Token::INT(*i),
         }
     }
 }
@@ -108,6 +110,7 @@ impl Display for Expression {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
             Expression::Identifier(s) => s.fmt(f),
+            Expression::IntegerLiteral(i) => i.fmt(f),
         }
     }
 }
