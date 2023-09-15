@@ -2,7 +2,7 @@ pub mod ast;
 
 use crate::lexer::{token::Token, Lexer};
 
-use self::ast::PrefixExpression;
+use self::ast::{Expression, InfixExpression, PrefixExpression};
 
 struct Parser {
     lexer: Lexer,
@@ -69,8 +69,12 @@ impl Parser {
     fn parse_statement(&mut self) -> Option<ast::Statement> {
         match self.curent_token {
             Token::LET => Some(ast::Statement::LetStatement(self.parse_let_statement()?)),
-            Token::RETURN => Some(ast::Statement::ReturnStatement(self.parse_return_statement()?)),
-            _ => Some(ast::Statement::ExpressionStatement(self.parse_expression_statement()?))
+            Token::RETURN => Some(ast::Statement::ReturnStatement(
+                self.parse_return_statement()?,
+            )),
+            _ => Some(ast::Statement::ExpressionStatement(
+                self.parse_expression_statement()?,
+            )),
         }
     }
 
@@ -127,13 +131,22 @@ impl Parser {
     fn parse_expression(&mut self, precedence: Precedence) -> Option<ast::Expression> {
         let left_expression = self.prefix_parse();
 
-        if left_expression == None {
-            self.no_prefix_parse_error(&self.curent_token.clone());
+        let mut left_expression = match left_expression {
+            Some(le) => le,
+            None => {
+                self.no_prefix_parse_error(&self.curent_token.clone());
 
-            return None;
+                return None;
+            }
+        };
+
+        while !self.peek_token_is(&Token::SEMICOLON) && precedence < self.peek_precedence() {
+            self.next_token();
+
+            left_expression = self.infix_parse(left_expression)?;
         }
 
-        return left_expression;
+        return Some(left_expression);
     }
 
     fn cur_token_is(&self, tok: Token) -> bool {
@@ -174,27 +187,47 @@ impl Parser {
         }
     }
 
+    fn cur_precedence(&self) -> Precedence {
+        match self.curent_token {
+            Token::EQ | Token::NOTEQ => Precedence::EQUALS,
+            Token::LT | Token::GT => Precedence::LESSGREATER,
+            Token::PLUS | Token::MINUS => Precedence::SUM,
+            Token::SLASH | Token::ASTERISK => Precedence::PRODUCT,
+            _ => Precedence::LOWEST,
+        }
+    }
+
+    fn peek_precedence(&self) -> Precedence {
+        match self.peek_token {
+            Token::EQ | Token::NOTEQ => Precedence::EQUALS,
+            Token::LT | Token::GT => Precedence::LESSGREATER,
+            Token::PLUS | Token::MINUS => Precedence::SUM,
+            Token::SLASH | Token::ASTERISK => Precedence::PRODUCT,
+            _ => Precedence::LOWEST,
+        }
+    }
+
     fn prefix_parse(&mut self) -> Option<ast::Expression> {
         match &self.curent_token {
             Token::IDENT(name) => {
                 let identifier = ast::Expression::Identifier(name.into());
 
                 return Some(identifier);
-            },
+            }
             Token::INT(int) => {
                 let int_literal = ast::Expression::IntegerLiteral(*int);
 
                 return Some(int_literal);
-            },
-            Token::BANG
-            | Token::MINUS => {
-                    let prefix_expression = ast::Expression::PrefixExpression(self.parse_prefix_expression()?);
+            }
+            Token::BANG | Token::MINUS => {
+                let prefix_expression =
+                    ast::Expression::PrefixExpression(self.parse_prefix_expression()?);
 
-                    return Some(prefix_expression);
-            },
+                return Some(prefix_expression);
+            }
             _ => {
                 return None;
-            },
+            }
         }
     }
 
@@ -210,26 +243,57 @@ impl Parser {
         return Some(expression);
     }
 
-    fn infix_parse(&mut self, left: &ast::Expression) -> Option<ast::Expression> {
-        None
+    fn infix_parse(&mut self, left: ast::Expression) -> Option<ast::Expression> {
+        match &self.curent_token {
+            Token::PLUS
+            | Token::MINUS
+            | Token::SLASH
+            | Token::ASTERISK
+            | Token::EQ
+            | Token::NOTEQ
+            | Token::LT
+            | Token::GT => {
+                let infix_expression =
+                    ast::Expression::InfixExpression(self.parse_infix_expression(left)?);
+
+                return Some(infix_expression);
+            }
+            _ => {
+                return None;
+            }
+        }
+    }
+
+    fn parse_infix_expression(&mut self, left: ast::Expression) -> Option<ast::InfixExpression> {
+        let token = self.curent_token.clone();
+        let precedence = self.cur_precedence();
+
+        self.next_token();
+
+        let right = self.parse_expression(precedence)?;
+
+        let expression = ast::InfixExpression::new(token, left, right);
+
+        return Some(expression);
     }
 }
 
+#[derive(PartialEq, PartialOrd)]
 enum Precedence {
     LOWEST,
-    EQUALS, // ==
+    EQUALS,      // ==
     LESSGREATER, // > or <
-    SUM, // +
-    PRODUCT, // *
-    PREFIX, // -X or !X
-    CALL, // myFunc(X)
+    SUM,         // +
+    PRODUCT,     // *
+    PREFIX,      // -X or !X
+    CALL,        // myFunc(X)
 }
 
 #[cfg(test)]
 mod tests {
     use crate::{
+        lexer::{self, token::Token},
         parser::ast,
-        lexer::{token::Token, self},
     };
 
     use super::Parser;
@@ -312,8 +376,8 @@ mod tests {
 
         if program.statements.len() != 1 {
             panic!(
-            "program does not heave enough statements. got: {}",
-            program.statements.len(),
+                "program does not heave enough statements. got: {}",
+                program.statements.len(),
             )
         }
 
@@ -324,7 +388,7 @@ mod tests {
 
         let identifier = match statement {
             ast::Expression::Identifier(i) => i,
-            _ => panic!("ExpressionStatement is not Identifier.")
+            _ => panic!("ExpressionStatement is not Identifier."),
         };
 
         assert_eq!(identifier, "foobar");
@@ -342,8 +406,8 @@ mod tests {
 
         if program.statements.len() != 1 {
             panic!(
-            "program does not have enough statements. got: {}",
-            program.statements.len(),
+                "program does not have enough statements. got: {}",
+                program.statements.len(),
             );
         }
 
@@ -362,10 +426,7 @@ mod tests {
 
     #[test]
     fn test_parsing_prefix_expressions() {
-        let prefix_tests = vec![
-            ("!5;", "!", 5),
-            ("-15;", "-", 15),
-        ];
+        let prefix_tests = vec![("!5;", "!", 5), ("-15;", "-", 15)];
 
         for test in prefix_tests {
             let lexer = lexer::Lexer::new(test.0.to_owned());
@@ -376,8 +437,8 @@ mod tests {
 
             if program.statements.len() != 1 {
                 panic!(
-                "program.statements does not have enough statements. got: {}",
-                program.statements.len(),
+                    "program.statements does not have enough statements. got: {}",
+                    program.statements.len(),
                 );
             }
 
@@ -393,6 +454,88 @@ mod tests {
 
             assert_eq!(test.1, expression.operator);
             test_integer_literal(&expression.right, test.2);
+        }
+    }
+
+    #[test]
+    fn test_parsing_infix_expressions() {
+        let infix_tests = vec![
+            ("5 + 5", 5, "+", 5),
+            ("5 - 5", 5, "-", 5),
+            ("5 * 5", 5, "*", 5),
+            ("5 / 5", 5, "/", 5),
+            ("5 > 5", 5, ">", 5),
+            ("5 < 5", 5, "<", 5),
+            ("5 == 5", 5, "==", 5),
+            ("5 != 5", 5, "!=", 5),
+        ];
+
+        for test in infix_tests {
+            let lexer = lexer::Lexer::new(test.0.to_owned());
+            let mut parser = Parser::new(lexer);
+
+            let program = parser.parse_program();
+            check_parse_errors(&parser);
+
+            if program.statements.len() != 1 {
+                panic!(
+                    "program.statements does not have enough statements. got: {}",
+                    program.statements.len(),
+                );
+            }
+
+            let statement = match &program.statements[0] {
+                ast::Statement::ExpressionStatement(s) => s,
+                x => panic!("statement is not ExpressionStatement. got: {:?}", x),
+            };
+
+            let expression = match statement {
+                ast::Expression::InfixExpression(ie) => ie,
+                x => panic!("ExpressionStatement is not InfixExpression got: {:?}", x),
+            };
+
+            test_integer_literal(&expression.left, test.1);
+
+            assert_eq!(expression.operator, test.2);
+
+            test_integer_literal(&expression.right, test.3);
+        }
+    }
+
+    #[test]
+    fn test_operator_precedence_parsing() {
+        let tests = vec![
+            ("-a * b", "((-a) * b)"),
+            ("-a * b", "((-a) * b)"),
+            ("!-a", "(!(-a))"),
+            ("a + b + c", "((a + b) + c)"),
+            ("a + b - c", "((a + b) - c)"),
+            ("a * b * c", "((a * b) * c)"),
+            ("a * b / c", "((a * b) / c)"),
+            ("a + b / c", "(a + (b / c))"),
+            ("a + b * c + d / e - f", "(((a + (b * c)) + (d / e)) - f)"),
+            ("3 + 4; -5 * 5", "(3 + 4)((-5) * 5)"),
+            ("5 > 4 == 3 < 4", "((5 > 4) == (3 < 4))"),
+            ("5 < 4 != 3 > 4", "((5 < 4) != (3 > 4))"),
+            (
+                "3 + 4 * 5 == 3 * 1 + 4 * 5",
+                "((3 + (4 * 5)) == ((3 * 1) + (4 * 5)))",
+            ),
+            (
+                "3 + 4 * 5 == 3 * 1 + 4 * 5",
+                "((3 + (4 * 5)) == ((3 * 1) + (4 * 5)))",
+            ),
+        ];
+
+        for test in tests {
+            let lexer = lexer::Lexer::new(test.0.to_owned());
+            let mut parser = Parser::new(lexer);
+            let program = parser.parse_program();
+            check_parse_errors(&parser);
+
+            let actual = program.to_string();
+
+            assert_eq!(test.1, actual);
         }
     }
 

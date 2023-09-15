@@ -96,6 +96,7 @@ pub enum Expression {
     Identifier(String),
     IntegerLiteral(isize),
     PrefixExpression(PrefixExpression),
+    InfixExpression(InfixExpression),
 }
 
 impl Expression {
@@ -104,6 +105,7 @@ impl Expression {
             Expression::Identifier(s) => Token::IDENT(s.to_string()),
             Expression::IntegerLiteral(i) => Token::INT(*i),
             Expression::PrefixExpression(pe) => pe.token.clone(),
+            Expression::InfixExpression(ie) => ie.token.clone(),
         }
     }
 }
@@ -114,6 +116,7 @@ impl Display for Expression {
             Expression::Identifier(s) => s.fmt(f),
             Expression::IntegerLiteral(i) => i.fmt(f),
             Expression::PrefixExpression(pe) => pe.fmt(f),
+            Expression::InfixExpression(ie) => ie.fmt(f),
         }
     }
 }
@@ -135,12 +138,62 @@ impl PrefixExpression {
 
         let right = Box::new(right);
 
-        return PrefixExpression{token, operator, right }
+        return PrefixExpression {
+            token,
+            operator,
+            right,
+        };
     }
 }
 
 impl Display for PrefixExpression {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(f, "({}{})", self.operator, self.right.to_string())
+    }
+}
+
+#[derive(PartialEq, Clone, Debug)]
+pub struct InfixExpression {
+    pub token: Token,
+    pub left: Box<Expression>,
+    pub operator: String,
+    pub right: Box<Expression>,
+}
+
+impl InfixExpression {
+    pub fn new(token: Token, left: Expression, right: Expression) -> InfixExpression {
+        let operator = match token {
+            Token::PLUS => String::from("+"),
+            Token::MINUS => String::from("-"),
+            Token::ASTERISK => String::from("*"),
+            Token::SLASH => String::from("/"),
+            Token::LT => String::from("<"),
+            Token::GT => String::from(">"),
+            Token::EQ => String::from("=="),
+            Token::NOTEQ => String::from("!="),
+            _ => panic!(),
+        };
+
+        let left = Box::new(left);
+        let right = Box::new(right);
+
+        return InfixExpression {
+            token,
+            left,
+            operator,
+            right,
+        };
+    }
+}
+
+impl Display for InfixExpression {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(
+            f,
+            "({} {} {})",
+            self.left.to_string(),
+            self.operator,
+            self.right.to_string()
+        )
     }
 }
