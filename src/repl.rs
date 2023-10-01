@@ -14,8 +14,8 @@ pub fn start() {
         let mut lexer = Lexer::new(scanned);
 
         let mut tok = lexer.next_token();
-        while tok != Token::EOF {
-            print!("{:?}\n", tok);
+        while tok != Token::Eof {
+            println!("{:?}", tok);
             tok = lexer.next_token();
         }
     }

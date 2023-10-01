@@ -26,7 +26,13 @@ pub struct Program {
 
 impl Program {
     pub fn new() -> Program {
-        return Program { statements: vec![] };
+        Program { statements: vec![] }
+    }
+}
+
+impl Default for Program {
+    fn default() -> Self {
+        Self::new()
     }
 }
 
@@ -51,8 +57,8 @@ pub enum Statement {
 impl Statement {
     pub fn token_literal(&self) -> Token {
         match self {
-            Statement::LetStatement(_) => Token::LET,
-            Statement::ReturnStatement(_) => Token::RETURN,
+            Statement::LetStatement(_) => Token::Let,
+            Statement::ReturnStatement(_) => Token::Return,
             Statement::ExpressionStatement(es) => es.token_literal(),
         }
     }
@@ -102,8 +108,8 @@ pub enum Expression {
 impl Expression {
     pub fn token_literal(&self) -> Token {
         match self {
-            Expression::Identifier(s) => Token::IDENT(s.to_string()),
-            Expression::IntegerLiteral(i) => Token::INT(*i),
+            Expression::Identifier(s) => Token::Ident(s.to_string()),
+            Expression::IntegerLiteral(i) => Token::Int(*i),
             Expression::PrefixExpression(pe) => pe.token.clone(),
             Expression::InfixExpression(ie) => ie.token.clone(),
         }
@@ -131,24 +137,24 @@ pub struct PrefixExpression {
 impl PrefixExpression {
     pub fn new(token: Token, right: Expression) -> PrefixExpression {
         let operator = match token {
-            Token::BANG => String::from("!"),
-            Token::MINUS => String::from("-"),
+            Token::Bang => String::from("!"),
+            Token::Minus => String::from("-"),
             _ => panic!(),
         };
 
         let right = Box::new(right);
 
-        return PrefixExpression {
+        PrefixExpression {
             token,
             operator,
             right,
-        };
+        }
     }
 }
 
 impl Display for PrefixExpression {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "({}{})", self.operator, self.right.to_string())
+        write!(f, "({}{})", self.operator, self.right)
     }
 }
 
@@ -163,37 +169,31 @@ pub struct InfixExpression {
 impl InfixExpression {
     pub fn new(token: Token, left: Expression, right: Expression) -> InfixExpression {
         let operator = match token {
-            Token::PLUS => String::from("+"),
-            Token::MINUS => String::from("-"),
-            Token::ASTERISK => String::from("*"),
-            Token::SLASH => String::from("/"),
-            Token::LT => String::from("<"),
-            Token::GT => String::from(">"),
-            Token::EQ => String::from("=="),
-            Token::NOTEQ => String::from("!="),
+            Token::Plus => String::from("+"),
+            Token::Minus => String::from("-"),
+            Token::Asterisk => String::from("*"),
+            Token::Slash => String::from("/"),
+            Token::Lt => String::from("<"),
+            Token::Gt => String::from(">"),
+            Token::Eq => String::from("=="),
+            Token::NotEq => String::from("!="),
             _ => panic!(),
         };
 
         let left = Box::new(left);
         let right = Box::new(right);
 
-        return InfixExpression {
+        InfixExpression {
             token,
             left,
             operator,
             right,
-        };
+        }
     }
 }
 
 impl Display for InfixExpression {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(
-            f,
-            "({} {} {})",
-            self.left.to_string(),
-            self.operator,
-            self.right.to_string()
-        )
+        write!(f, "({} {} {})", self.left, self.operator, self.right)
     }
 }

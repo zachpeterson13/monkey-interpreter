@@ -3,60 +3,60 @@ use std::str::FromStr;
 #[derive(Debug, PartialEq, Clone)]
 pub enum Token {
     // Special
-    ILLEGAL,
-    EOF,
+    Illegal,
+    Eof,
 
     // Identifiers + literals
-    IDENT(String),
-    INT(isize),
+    Ident(String),
+    Int(isize),
 
     // Operators
-    ASSIGN,
-    PLUS,
-    MINUS,
-    BANG,
-    ASTERISK,
-    SLASH,
-    LT,
-    GT,
-    EQ,
-    NOTEQ,
+    Assign,
+    Plus,
+    Minus,
+    Bang,
+    Asterisk,
+    Slash,
+    Lt,
+    Gt,
+    Eq,
+    NotEq,
 
     // Delimiters
-    COMMA,
-    SEMICOLON,
+    Comma,
+    Semicolon,
 
-    LPAREN,
-    RPAREN,
-    LBRACE,
-    RBRACE,
+    LParen,
+    RParen,
+    LBrace,
+    RBrace,
 
     // Keywords
-    FUNCTION,
-    LET,
-    TRUE,
-    FALSE,
-    IF,
-    ELSE,
-    RETURN,
+    Function,
+    Let,
+    True,
+    False,
+    If,
+    Else,
+    Return,
 }
 
 impl Token {
     pub fn from_literal(literal: &str) -> Token {
         match literal {
-            "let" => Token::LET,
-            "fn" => Token::FUNCTION,
-            "true" => Token::TRUE,
-            "false" => Token::FALSE,
-            "if" => Token::IF,
-            "else" => Token::ELSE,
-            "return" => Token::RETURN,
-            _ => Token::IDENT(literal.into()),
+            "let" => Token::Let,
+            "fn" => Token::Function,
+            "true" => Token::True,
+            "false" => Token::False,
+            "if" => Token::If,
+            "else" => Token::Else,
+            "return" => Token::Return,
+            _ => Token::Ident(literal.into()),
         }
     }
 
     pub fn from_number(number: &str) -> Token {
         let number = isize::from_str(number).unwrap();
-        Token::INT(number)
+        Token::Int(number)
     }
 }
